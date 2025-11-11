@@ -29,6 +29,10 @@ nimble install naecs
 ```
 *(Note: This command will work once the package is published. For now, you can use a local path.)*
 
+```bash
+nimble install https://github.com/Hammer2900/naecs
+```
+
 Or add it to your project's `.nimble` file:
 ```nim
 # myproject.nimble
