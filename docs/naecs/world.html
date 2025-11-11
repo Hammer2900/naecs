@@ -236,7 +236,7 @@
   <span class="Identifier">tagBitmask</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">uint64</span></pre></dt>
   <dd>
     
-    Base Entity object
+    Represents a unique entity in the world, combining an ID and a version.
     
   </dd>
 </div>
@@ -252,7 +252,7 @@
   <span class="Identifier">eventQueues</span><span class="Operator">*</span><span class="Other">:</span> <span class="Identifier">Table</span><span class="Other">[</span><span class="Identifier">string</span><span class="Other">,</span> <span class="Identifier">seq</span><span class="Other">[</span><span class="Identifier">pointer</span><span class="Other">]</span><span class="Other">]</span></pre></dt>
   <dd>
     
-    The World contains all entities and components using archetype-based storage
+    The main container for all ECS data, including entities, components, and systems.
     
   </dd>
 </div>
@@ -268,7 +268,7 @@
     <span class="Identifier">discardable</span>.}</pre></dt>
   <dd>
     
-    Add a component for an entity
+    Adds a component to an entity. This may cause the entity to move to a new archetype. Returns a pointer to the newly added component data.
     
   </dd>
 </div>
@@ -277,7 +277,7 @@
                      <span class="Identifier">componentType</span><span class="Other">:</span> <span class="Identifier">typedesc</span><span class="Other">[</span><span class="Identifier">T</span><span class="Other">]</span><span class="Other">)</span><span class="Other">:</span> <span class="Keyword">ptr</span> <span class="Identifier">T</span> {.<span class="Identifier">discardable</span>.}</pre></dt>
   <dd>
     
-    Add a component for an entity (with default initialization)
+    Adds a component to an entity using its default value.
     
   </dd>
 </div>
@@ -288,7 +288,7 @@
   <dt><pre><span class="Keyword">proc</span> <a href="#addEntity%2CWorld"><span class="Identifier">addEntity</span></a><span class="Other">(</span><span class="Identifier">world</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="world.html#World"><span class="Identifier">World</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">uint64</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
-    Adding a new entity to the world. Returns the entity identifier
+    Creates a new entity in the world and returns its unique 64-bit handle. Reuses old entity IDs if available, incrementing the version for safety.
     
   </dd>
 </div>
@@ -299,7 +299,7 @@
   <dt><pre><span class="Keyword">proc</span> <a href="#addTag%2CWorld%2Cuint64%2Ctypedesc"><span class="Identifier">addTag</span></a><span class="Other">(</span><span class="Identifier">world</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="world.html#World"><span class="Identifier">World</span></a><span class="Other">;</span> <span class="Identifier">entity</span><span class="Other">:</span> <span class="Identifier">uint64</span><span class="Other">;</span> <span class="Identifier">tagType</span><span class="Other">:</span> <span class="Identifier">typedesc</span><span class="Other">)</span></pre></dt>
   <dd>
     
-    Add a tag for an entity
+    Adds a tag to an entity. This is a very fast, constant-time operation.
     
   </dd>
 </div>
@@ -311,7 +311,7 @@
     <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">RootEffect</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
-    Обрабатывает все события в очереди, вызывая подписчиков. Эту функцию нужно вызывать один раз в конце каждого кадра.
+    Processes all queued events, calling their registered listeners. This should be called once per frame, typically after all systems have run.
     
   </dd>
 </div>
@@ -323,7 +323,7 @@
     <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
-    Remove an entity from the world
+    Removes an entity and all its components from the world. The entity's ID is added to a free list for later reuse.
     
   </dd>
 </div>
@@ -335,7 +335,7 @@
                      <span class="Identifier">componentType</span><span class="Other">:</span> <span class="Identifier">typedesc</span><span class="Other">[</span><span class="Identifier">T</span><span class="Other">]</span><span class="Other">)</span><span class="Other">:</span> <span class="Keyword">ptr</span> <span class="Identifier">T</span></pre></dt>
   <dd>
     
-    Returns a pointer to the component
+    Retrieves a pointer to an entity's component. Returns <tt class="docutils literal"><span class="pre"><span class="Keyword">nil</span></span></tt> if the entity does not have the specified component.
     
   </dd>
 </div>
@@ -346,7 +346,7 @@
   <dt><pre><span class="Keyword">proc</span> <a href="#getComponentID%2CWorld%2Ctypedesc"><span class="Identifier">getComponentID</span></a><span class="Other">(</span><span class="Identifier">world</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="world.html#World"><span class="Identifier">World</span></a><span class="Other">;</span> <span class="Identifier">componentType</span><span class="Other">:</span> <span class="Identifier">typedesc</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">uint32</span> {.<span class="Identifier">inline</span>.}</pre></dt>
   <dd>
     
-    
+    Gets the unique ID for a component type, registering it if it's the first time.
     
   </dd>
 </div>
@@ -358,7 +358,7 @@
     <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
-    Returns the entity ID
+    Extracts the 32-bit ID from a 64-bit entity handle.
     
   </dd>
 </div>
@@ -370,7 +370,7 @@
     <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
-    Returns the version of the entity
+    Extracts the 32-bit version from a 64-bit entity handle.
     
   </dd>
 </div>
@@ -381,7 +381,7 @@
   <dt><pre><span class="Keyword">proc</span> <a href="#getTagID%2CWorld%2Ctypedesc"><span class="Identifier">getTagID</span></a><span class="Other">(</span><span class="Identifier">world</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="world.html#World"><span class="Identifier">World</span></a><span class="Other">;</span> <span class="Identifier">tagType</span><span class="Other">:</span> <span class="Identifier">typedesc</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">uint32</span> {.<span class="Identifier">inline</span>.}</pre></dt>
   <dd>
     
-    
+    Gets the unique ID for a tag type, registering it if it's the first time.
     
   </dd>
 </div>
@@ -392,7 +392,7 @@
   <dt><pre><span class="Keyword">proc</span> <a href="#hasComponent%2CWorld%2Cuint64%2Ctypedesc"><span class="Identifier">hasComponent</span></a><span class="Other">(</span><span class="Identifier">world</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="world.html#World"><span class="Identifier">World</span></a><span class="Other">;</span> <span class="Identifier">entity</span><span class="Other">:</span> <span class="Identifier">uint64</span><span class="Other">;</span> <span class="Identifier">componentType</span><span class="Other">:</span> <span class="Identifier">typedesc</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span></pre></dt>
   <dd>
     
-    
+    Checks if an entity has a specific component.
     
   </dd>
 </div>
@@ -403,7 +403,7 @@
   <dt><pre><span class="Keyword">proc</span> <a href="#hasTag%2CWorld%2Cuint64%2Ctypedesc"><span class="Identifier">hasTag</span></a><span class="Other">(</span><span class="Identifier">world</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="world.html#World"><span class="Identifier">World</span></a><span class="Other">;</span> <span class="Identifier">entity</span><span class="Other">:</span> <span class="Identifier">uint64</span><span class="Other">;</span> <span class="Identifier">tagType</span><span class="Other">:</span> <span class="Identifier">typedesc</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span></pre></dt>
   <dd>
     
-    
+    Checks if an entity has a specific tag.
     
   </dd>
 </div>
@@ -415,7 +415,7 @@
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
-    Initialization of a World object
+    Initializes a new <tt class="docutils literal"><span class="pre"><span class="Identifier">World</span></span></tt> object. <tt class="docutils literal"><span class="pre"><span class="Identifier">initAlloc</span></span></tt>: The initial number of entities to pre-allocate memory for. <tt class="docutils literal"><span class="pre"><span class="Identifier">allocSize</span></span></tt>: The number of new entity slots to add when the world's capacity is exceeded.
     
   </dd>
 </div>
@@ -427,7 +427,7 @@
                          <span class="Identifier">listener</span><span class="Other">:</span> <span class="Keyword">proc</span> <span class="Other">(</span><span class="Identifier">w</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="world.html#World"><span class="Identifier">World</span></a><span class="Other">;</span> <span class="Identifier">e</span><span class="Other">:</span> <span class="Keyword">ptr</span> <span class="Identifier">T</span><span class="Other">)</span> {.<span class="Identifier">closure</span>.}<span class="Other">)</span></pre></dt>
   <dd>
     
-    Регистрирует процедуру-обработчик, безопасно стирая тип с помощью замыкания-обертки.
+    Registers an event listener for a specific event type <tt class="docutils literal"><span class="pre"><span class="Identifier">T</span></span></tt>. The listener procedure will be called when the event queue is dispatched. Handles closures safely.
     
   </dd>
 </div>
@@ -438,7 +438,7 @@
   <dt><pre><span class="Keyword">proc</span> <a href="#removeComponent%2CWorld%2Cuint64%2Ctypedesc"><span class="Identifier">removeComponent</span></a><span class="Other">(</span><span class="Identifier">world</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="world.html#World"><span class="Identifier">World</span></a><span class="Other">;</span> <span class="Identifier">entity</span><span class="Other">:</span> <span class="Identifier">uint64</span><span class="Other">;</span> <span class="Identifier">componentType</span><span class="Other">:</span> <span class="Identifier">typedesc</span><span class="Other">)</span></pre></dt>
   <dd>
     
-    
+    Removes a component from an entity. This may cause the entity to move to a new archetype.
     
   </dd>
 </div>
@@ -449,7 +449,7 @@
   <dt><pre><span class="Keyword">proc</span> <a href="#removeTag%2CWorld%2Cuint64%2Ctypedesc"><span class="Identifier">removeTag</span></a><span class="Other">(</span><span class="Identifier">world</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="world.html#World"><span class="Identifier">World</span></a><span class="Other">;</span> <span class="Identifier">entity</span><span class="Other">:</span> <span class="Identifier">uint64</span><span class="Other">;</span> <span class="Identifier">tagType</span><span class="Other">:</span> <span class="Identifier">typedesc</span><span class="Other">)</span></pre></dt>
   <dd>
     
-    
+    Removes a tag from an entity. This is a very fast, constant-time operation.
     
   </dd>
 </div>
@@ -460,7 +460,7 @@
   <dt><pre><span class="Keyword">proc</span> <a href="#sendEvent%2CWorld%2CT"><span class="Identifier">sendEvent</span></a><span class="Other">[</span><span class="Identifier">T</span><span class="Other">]</span><span class="Other">(</span><span class="Identifier">world</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="world.html#World"><span class="Identifier">World</span></a><span class="Other">;</span> <span class="Identifier">event</span><span class="Other">:</span> <span class="Identifier">T</span><span class="Other">)</span></pre></dt>
   <dd>
     
-    Ставит событие в очередь на обработку в конце кадра.
+    Queues an event to be processed at the end of the current frame. This is a fast operation that copies the event data into a queue.
     
   </dd>
 </div>
@@ -517,7 +517,7 @@
   <dt><pre><span class="Keyword">iterator</span> <a href="#withComponent.i%2CWorld%2Ctypedesc"><span class="Identifier">withComponent</span></a><span class="Other">(</span><span class="Identifier">world</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="world.html#World"><span class="Identifier">World</span></a><span class="Other">;</span> <span class="Identifier">componentType</span><span class="Other">:</span> <span class="Identifier">typedesc</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">uint64</span></pre></dt>
   <dd>
     
-    
+    Iterates over all entities that have the specified component
     
   </dd>
 </div>
@@ -528,7 +528,7 @@
   <dt><pre><span class="Keyword">iterator</span> <a href="#withComponents.i%2CWorld%2Ctypedesc%2Ctypedesc"><span class="Identifier">withComponents</span></a><span class="Other">(</span><span class="Identifier">world</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="world.html#World"><span class="Identifier">World</span></a><span class="Other">;</span> <span class="Identifier">T1</span><span class="Other">:</span> <span class="Identifier">typedesc</span><span class="Other">;</span> <span class="Identifier">T2</span><span class="Other">:</span> <span class="Identifier">typedesc</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">uint64</span></pre></dt>
   <dd>
     
-    
+    Iterates over all entities that have both of the specified components.
     
   </dd>
 </div>
@@ -563,7 +563,7 @@
   <dt><pre><span class="Keyword">iterator</span> <a href="#withComponentTag.i%2CWorld%2Ctypedesc%2Ctypedesc"><span class="Identifier">withComponentTag</span></a><span class="Other">(</span><span class="Identifier">world</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="world.html#World"><span class="Identifier">World</span></a><span class="Other">;</span> <span class="Identifier">Comp</span><span class="Other">:</span> <span class="Identifier">typedesc</span><span class="Other">;</span> <span class="Identifier">Tag</span><span class="Other">:</span> <span class="Identifier">typedesc</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">uint64</span></pre></dt>
   <dd>
     
-    
+    Iterates over all entities that have the specified component AND tag.
     
   </dd>
 </div>
@@ -574,7 +574,7 @@
   <dt><pre><span class="Keyword">iterator</span> <a href="#withTag.i%2CWorld%2Ctypedesc"><span class="Identifier">withTag</span></a><span class="Other">(</span><span class="Identifier">world</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="world.html#World"><span class="Identifier">World</span></a><span class="Other">;</span> <span class="Identifier">tagType</span><span class="Other">:</span> <span class="Identifier">typedesc</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">uint64</span></pre></dt>
   <dd>
     
-    
+    Iterates over all entities that have the specified tag.
     
   </dd>
 </div>
@@ -591,8 +591,13 @@
   <dt><pre><span class="Keyword">macro</span> <a href="#prefab.m%2Cstring%2Cuntyped"><span class="Identifier">prefab</span></a><span class="Other">(</span><span class="Identifier">name</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span> <span class="Identifier">body</span><span class="Other">:</span> <span class="Identifier">untyped</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">untyped</span></pre></dt>
   <dd>
     
-    <p>Макрос для определения префаба (шаблона) сущности.</p>
-<p>Пример: prefab &quot;player&quot;: PositionComponent(x: 100, y: 100) VelocityComponent(dx: 0, dy: 0)</p>
+    <p>Defines a prefab (entity template) with a set of default components. This macro generates a <tt class="docutils literal"><span class="pre"><span class="Identifier">register_prefab_</span><span class="Operator">...</span></span></tt> procedure that must be called to make the prefab available to the world.</p>
+<p>Usage:</p>
+<p><pre class="listing"><span class="Identifier">prefab</span> <span class="StringLit">&quot;player&quot;</span><span class="Punctuation">:</span>
+  <span class="Identifier">Position</span><span class="Punctuation">(</span><span class="Identifier">x</span><span class="Punctuation">:</span> <span class="DecNumber">100</span><span class="Punctuation">,</span> <span class="Identifier">y</span><span class="Punctuation">:</span> <span class="DecNumber">100</span><span class="Punctuation">)</span>
+  <span class="Identifier">Velocity</span><span class="Punctuation">(</span><span class="Identifier">dx</span><span class="Punctuation">:</span> <span class="DecNumber">0</span><span class="Punctuation">,</span> <span class="Identifier">dy</span><span class="Punctuation">:</span> <span class="DecNumber">0</span><span class="Punctuation">)</span>
+
+<span class="Identifier">register_prefab_player</span><span class="Punctuation">(</span><span class="Identifier">world</span><span class="Punctuation">)</span></pre></p>
 
     
   </dd>
@@ -604,7 +609,11 @@
   <dt><pre><span class="Keyword">macro</span> <a href="#spawn.m%2Cuntyped%2Cstring%2Cvarargs%5Buntyped%5D"><span class="Identifier">spawn</span></a><span class="Other">(</span><span class="Identifier">world</span><span class="Other">:</span> <span class="Identifier">untyped</span><span class="Other">;</span> <span class="Identifier">name</span><span class="Other">:</span> <span class="Identifier">string</span><span class="Other">;</span> <span class="Identifier">overrides</span><span class="Other">:</span> <span class="Identifier">varargs</span><span class="Other">[</span><span class="Identifier">untyped</span><span class="Other">]</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">untyped</span></pre></dt>
   <dd>
     
-    Создает сущность по префабу, позволяя переопределить компоненты.
+    <p>Spawns an entity from a registered prefab, with optional component overrides.</p>
+<p>Usage:</p>
+<p><pre class="listing"><span class="Keyword">let</span> <span class="Identifier">player</span> <span class="Operator">=</span> <span class="Identifier">world</span><span class="Operator">.</span><span class="Identifier">spawn</span><span class="Punctuation">(</span><span class="StringLit">&quot;player&quot;</span><span class="Punctuation">)</span>
+<span class="Keyword">let</span> <span class="Identifier">enemy</span> <span class="Operator">=</span> <span class="Identifier">world</span><span class="Operator">.</span><span class="Identifier">spawn</span><span class="Punctuation">(</span><span class="StringLit">&quot;enemy&quot;</span><span class="Punctuation">,</span> <span class="Identifier">Position</span><span class="Punctuation">(</span><span class="Identifier">x</span><span class="Punctuation">:</span> <span class="DecNumber">500</span><span class="Punctuation">,</span> <span class="Identifier">y</span><span class="Punctuation">:</span> <span class="DecNumber">200</span><span class="Punctuation">)</span><span class="Punctuation">)</span></pre></p>
+
     
   </dd>
 </div>
@@ -615,8 +624,12 @@
   <dt><pre><span class="Keyword">macro</span> <a href="#system.m%2Cuntyped%2Cuntyped%2Cvarargs%5Buntyped%5D"><span class="Identifier">system</span></a><span class="Other">(</span><span class="Identifier">world</span><span class="Other">:</span> <span class="Identifier">untyped</span><span class="Other">;</span> <span class="Identifier">name</span><span class="Other">:</span> <span class="Identifier">untyped</span><span class="Other">;</span> <span class="Identifier">args</span><span class="Other">:</span> <span class="Identifier">varargs</span><span class="Other">[</span><span class="Identifier">untyped</span><span class="Other">]</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">untyped</span></pre></dt>
   <dd>
     
-    <p>Макрос для создания системы. Автоматически генерирует цикл по сущностям и получение компонентов.</p>
-<p>Пример использования: system world, updatePositions: pos: Position: pos.x += 1 vel: Velocity: vel.y += 1</p>
+    <p>Creates a system that iterates over entities with a specific set of components. The macro automatically generates the query loop and provides convenient variables for each component.</p>
+<p>Usage:</p>
+<p><pre class="listing"><span class="Identifier">system</span> <span class="Identifier">world</span><span class="Punctuation">,</span> <span class="Identifier">mySystem</span><span class="Punctuation">:</span>
+  <span class="Identifier">pos</span><span class="Punctuation">:</span> <span class="Identifier">Position</span><span class="Punctuation">:</span>
+    <span class="Identifier">vel</span><span class="Punctuation">:</span> <span class="Identifier">Velocity</span><span class="Punctuation">:</span>
+      <span class="Identifier">pos</span><span class="Operator">.</span><span class="Identifier">x</span> <span class="Operator">+=</span> <span class="Identifier">vel</span><span class="Operator">.</span><span class="Identifier">dx</span></pre></p>
 
     
   </dd>
@@ -633,7 +646,7 @@
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br>
-        <small style="color: var(--hint);">Made with Nim. Generated: 2025-11-11 04:24:12 UTC</small>
+        <small style="color: var(--hint);">Made with Nim. Generated: 2025-11-11 05:47:08 UTC</small>
       </div>
     </div>
   </div>

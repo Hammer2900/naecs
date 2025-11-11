@@ -288,7 +288,35 @@ Or the shorter version:
 nim c -d:release -r tests/bench.nim
 ```
 
-## 벤치마크 (Benchmark)
+### Nimble Tasks (Makefile-like Commands)
+
+This project uses Nimble tasks to automate common development actions.
+
+*   **Generate Documentation:**
+    ```bash
+    nimble docs
+    ```
+    This command generates all HTML documentation and places it in the `docs/` directory.
+
+*   **Run Unit Tests:**
+    ```bash
+    nimble test
+    ```
+    *(or `nimble run_tests`)*
+
+*   **Run the Benchmark:**
+    ```bash
+    nimble run_bench
+    ```
+    This compiles and runs the benchmark in release mode for accurate measurements.
+
+*   **Clean the Project:**
+    ```bash
+    nimble clean
+    ```
+    This removes all generated artifacts, including `nimcache`, documentation, and test binaries.
+
+## Benchmark
 
 These results are a direct consequence of the archetype architecture. Here is a sample of the performance on standard hardware (Intel Core i7) when simulating a world with **100,000 entities**:
 

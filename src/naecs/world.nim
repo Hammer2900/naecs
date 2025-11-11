@@ -3,37 +3,43 @@ import std/hashes
 import strutils
 import macros
 
+#------------------------------------------------------------------------------
+# Type Definitions
+#------------------------------------------------------------------------------
+
 type
+  ## (Internal) A procedure that initializes a component on an entity for a prefab.
   ComponentInitializer = proc(world: var World, entity: uint64, overrides: pointer)
 
+  ## (Internal) Represents a prefab (entity template) with a name and a list of initializers.
   Prefab = object
     name*: string
-    initializers*: seq[ComponentInitializer] # Список "установщиков" компонентов
+    initializers*: seq[ComponentInitializer]
 
   Entity* = object
-    ## Base Entity object
-    version*: uint32
-    archetypeIndex: int  # Индекс архетипа, к которому принадлежит сущность
-    indexInArchetype: int  # Индекс внутри массива архетипа
-    tagBitmask*: uint64  # Теги хранятся отдельно для каждой сущности
+      ## Represents a unique entity in the world, combining an ID and a version.
+      version*: uint32
+      archetypeIndex: int      # Index of the archetype this entity belongs to.
+      indexInArchetype: int    # Index of the entity's data within its archetype.
+      tagBitmask*: uint64     # Bitmask for up to 64 unique tags, stored per-entity.
 
+  ## (Internal) Storage for a single component type within an archetype.
   ComponentStorage = object
-    ## Хранилище для одного типа компонентов в архетипе
     data: pointer
     componentSize: int
     count: int
     capacity: int
 
+  ## (Internal) An archetype represents a unique combination of component types.
   Archetype = object
-    ## Архетип - уникальная комбинация компонентов
     componentMask*: uint64
     tagMask*: uint64
-    entities*: seq[uint32]  # ID сущностей в этом архетипе
-    componentStorages: seq[ComponentStorage]  # Данные компонентов
-    componentIds: seq[uint32]  # Какие компоненты есть в архетипе
+    entities*: seq[uint32]  # IDs of entities in this archetype.
+    componentStorages: seq[ComponentStorage]  # Component data arrays.
+    componentIds: seq[uint32]  # The component IDs this archetype contains.
 
   World* = object
-    ## The World contains all entities and components using archetype-based storage
+    ## The main container for all ECS data, including entities, components, and systems.
     entities*: seq[Entity]
     freeEntities: seq[uint32]
     currentEntityId*: uint32
@@ -41,7 +47,7 @@ type
     allocSize*: uint32
 
     archetypes*: seq[Archetype]
-    archetypeMap: Table[uint64, int]  # componentMask -> archetype index
+    archetypeMap: Table[uint64, int]  # Maps a componentMask to an archetype index.
 
     componentTypeMap: Table[string, uint32]
     tagTypeMap: Table[string, uint32]
@@ -52,6 +58,12 @@ type
     eventQueues*: Table[string, seq[pointer]]
 
   EventListener = proc(w: var World, data: pointer) {.closure.}
+  ## A type alias for a procedure that can act as an event listener.
+  ## It supports closures, allowing it to be defined within other scopes.
+
+#------------------------------------------------------------------------------
+# Internal Procs & Memory Management
+#------------------------------------------------------------------------------
 
 proc hash(x: uint64): Hash =
   result = hash(cast[int](x))
@@ -67,13 +79,15 @@ proc `=destroy`(archetype: var Archetype) =
 proc `=destroy`(world: var World) =
   for archetype in world.archetypes.mitems:
     `=destroy`(archetype)
-  # Очищаем все оставшиеся события в очередях
+  # Clean up any remaining events in the queues to prevent memory leaks
   for _, queue in world.eventQueues:
     for eventPtr in queue:
       deallocShared(eventPtr)
 
 proc initWorld*(initAlloc: uint32 = 1000, allocSize: uint32 = 1000): World =
-  ## Initialization of a World object
+  ## Initializes a new `World` object.
+  ## `initAlloc`: The initial number of entities to pre-allocate memory for.
+  ## `allocSize`: The number of new entity slots to add when the world's capacity is exceeded.
   result = World()
   result.entities.setLen(initAlloc)
   result.maxEntityId = initAlloc
@@ -88,7 +102,7 @@ proc initWorld*(initAlloc: uint32 = 1000, allocSize: uint32 = 1000): World =
   result.eventListeners = initTable[string, seq[proc(w: var World, data: pointer)]]()
   result.eventQueues = initTable[string, seq[pointer]]()
 
-  # Создаём пустой архетип (для сущностей без компонентов)
+  # Create an empty archetype for entities with no components.
   result.archetypes.add(Archetype(
     componentMask: 0,
     entities: @[],
@@ -98,22 +112,25 @@ proc initWorld*(initAlloc: uint32 = 1000, allocSize: uint32 = 1000): World =
   result.archetypeMap[0] = 0
 
 proc increaseWorld(world: var World) =
+  # (Internal) Expands the entity capacity of the world.
   world.maxEntityId += world.allocSize
   world.entities.setLen(world.maxEntityId)
 
 proc getEntityId*(entity: uint64): uint32 {.inline.} =
-  ## Returns the entity ID
+  ## Extracts the 32-bit ID from a 64-bit entity handle.
   return (entity shr 32).uint32
 
 proc getEntityVersion*(entity: uint64): uint32 {.inline.} =
-  ## Returns the version of the entity
+  ## Extracts the 32-bit version from a 64-bit entity handle.
   return entity.uint32
 
 proc getNewEntityID(world: var World): uint32 {.inline.} =
+  # (Internal) Gets the next available entity ID.
   inc world.currentEntityId
   return world.currentEntityId
 
 proc registerComponent(world: var World, componentType: typedesc) {.inline.} =
+  # (Internal) Assigns a unique ID to a component type if not already registered.
   let typeName = $componentType
   if typeName notin world.componentTypeMap:
     assert(world.nextComponentId < 64, "Component type limit reached (max 64)")
@@ -121,12 +138,14 @@ proc registerComponent(world: var World, componentType: typedesc) {.inline.} =
     inc world.nextComponentId
 
 proc getComponentID*(world: var World, componentType: typedesc): uint32 {.inline.} =
+  ## Gets the unique ID for a component type, registering it if it's the first time.
   let typeName = $componentType
   if typeName notin world.componentTypeMap:
     world.registerComponent(componentType)
   return world.componentTypeMap[typeName]
 
 proc registerTag(world: var World, tagType: typedesc) {.inline.} =
+  # (Internal) Assigns a unique ID to a tag type if not already registered.
   let typeName = $tagType
   if typeName notin world.tagTypeMap:
     assert(world.nextTagId < 64, "Tag type limit reached (max 64)")
@@ -134,11 +153,13 @@ proc registerTag(world: var World, tagType: typedesc) {.inline.} =
     inc world.nextTagId
 
 proc getTagID*(world: var World, tagType: typedesc): uint32 {.inline.} =
+  ## Gets the unique ID for a tag type, registering it if it's the first time.
   let typeName = $tagType
   if typeName notin world.tagTypeMap:
     world.registerTag(tagType)
   return world.tagTypeMap[typeName]
 
+# (Internal) Archetype and component storage management procs.
 proc getOrCreateArchetype(world: var World, componentMask: uint64, componentIds: seq[uint32]): int =
   ## Получает или создаёт архетип с заданной маской компонентов
   if componentMask in world.archetypeMap:
@@ -263,8 +284,13 @@ proc moveEntityToArchetype[T](world: var World, entityId: uint32, newArchetypeIn
   for (_, tempData) in oldComponents:
     deallocShared(tempData)
 
+#------------------------------------------------------------------------------
+# Public API: Entity, Component, Tag Management
+#------------------------------------------------------------------------------
+
 proc addEntity*(world: var World): uint64 =
-  ## Adding a new entity to the world. Returns the entity identifier
+  ## Creates a new entity in the world and returns its unique 64-bit handle.
+  ## Reuses old entity IDs if available, incrementing the version for safety.
   var id: uint32 = 0
   if world.freeEntities.len > 0:
     id = world.freeEntities.pop
@@ -283,7 +309,8 @@ proc addEntity*(world: var World): uint64 =
   return id.uint64 shl 32 + world.entities[id].version.uint64
 
 proc addComponent*[T](world: var World, entity: uint64, component: T): ptr T {.discardable.} =
-  ## Add a component for an entity
+  ## Adds a component to an entity. This may cause the entity to move to a new archetype.
+  ## Returns a pointer to the newly added component data.
   let entityId = getEntityId(entity)
   let componentId = world.getComponentID(T)
   let componentMask = 1'u64 shl componentId
@@ -339,11 +366,12 @@ proc addComponent*[T](world: var World, entity: uint64, component: T): ptr T {.d
   raise newException(AssertionError, "Component was not found in archetype immediately after adding")
 
 proc addComponent*[T](world: var World, entity: uint64, componentType: typedesc[T]): ptr T {.discardable.} =
-  ## Add a component for an entity (with default initialization)
+  ## Adds a component to an entity using its default value.
   return world.addComponent(entity, T())
 
 proc getComponent*[T](world: var World, entity: uint64, componentType: typedesc[T]): ptr T =
-  ## Returns a pointer to the component
+  ## Retrieves a pointer to an entity's component.
+  ## Returns `nil` if the entity does not have the specified component.
   let entityId = getEntityId(entity)
   let componentId = world.getComponentID(T)
 
@@ -360,6 +388,7 @@ proc getComponent*[T](world: var World, entity: uint64, componentType: typedesc[
   return nil
 
 proc removeComponent*(world: var World, entity: uint64, componentType: typedesc) =
+  ## Removes a component from an entity. This may cause the entity to move to a new archetype.
   let entityId = getEntityId(entity)
   let componentId = world.getComponentID(componentType)
   let componentMask = 1'u64 shl componentId
@@ -368,11 +397,10 @@ proc removeComponent*(world: var World, entity: uint64, componentType: typedesc)
   let currentMask = world.archetypes[currentArchetypeIndex].componentMask
 
   if (currentMask and componentMask) == 0:
-    return  # Компонента нет
+    return
 
   let newMask = currentMask xor componentMask
 
-  # Собираем список ID компонентов для нового архетипа
   var componentIds: seq[uint32] = @[]
   for i in 0'u32..<64:
     if (newMask and (1'u64 shl i)) != 0:
@@ -380,7 +408,6 @@ proc removeComponent*(world: var World, entity: uint64, componentType: typedesc)
 
   let newArchetypeIndex = world.getOrCreateArchetype(newMask, componentIds)
 
-  # Если архетип новый, создаём хранилища
   if world.archetypes[newArchetypeIndex].componentStorages.len == 0 and componentIds.len > 0:
     let oldArchetype = world.archetypes[currentArchetypeIndex].addr
     for compId in componentIds:
@@ -394,17 +421,17 @@ proc removeComponent*(world: var World, entity: uint64, componentType: typedesc)
           ))
           break
 
-  # Перемещаем сущность
   type DummyComponent = object
   moveEntityToArchetype(world, entityId, newArchetypeIndex, DummyComponent())
 
 proc addTag*(world: var World, entity: uint64, tagType: typedesc) =
-  ## Add a tag for an entity
+  ## Adds a tag to an entity. This is a very fast, constant-time operation.
   let entityId = getEntityId(entity)
   let tagId = world.getTagID(tagType)
   world.entities[entityId].tagBitmask = world.entities[entityId].tagBitmask or (1'u64 shl tagId)
 
 proc removeTag*(world: var World, entity: uint64, tagType: typedesc) =
+  ## Removes a tag from an entity. This is a very fast, constant-time operation.
   let entityId = getEntityId(entity)
   let tagId = world.getTagID(tagType)
   let tagMask = 1'u64 shl tagId
@@ -415,7 +442,8 @@ proc removeTag*(world: var World, entity: uint64, tagType: typedesc) =
   world.entities[entityId].tagBitmask = world.entities[entityId].tagBitmask xor tagMask
 
 proc freeEntity*(world: var World, entity: uint64) =
-  ## Remove an entity from the world
+  ## Removes an entity and all its components from the world.
+  ## The entity's ID is added to a free list for later reuse.
   let entityId = getEntityId(entity)
   removeEntityFromArchetype(world, entityId)
   world.entities[entityId].archetypeIndex = -1
@@ -424,6 +452,7 @@ proc freeEntity*(world: var World, entity: uint64) =
   world.freeEntities.add(entityId)
 
 proc hasComponent*(world: var World, entity: uint64, componentType: typedesc): bool =
+  ## Checks if an entity has a specific component.
   let entityId = getEntityId(entity)
   let componentId = world.getComponentID(componentType)
   let archetypeIndex = world.entities[entityId].archetypeIndex
@@ -433,6 +462,7 @@ proc hasComponent*(world: var World, entity: uint64, componentType: typedesc): b
   return (world.archetypes[archetypeIndex].componentMask and componentMask) != 0
 
 proc hasTag*(world: var World, entity: uint64, tagType: typedesc): bool =
+  ## Checks if an entity has a specific tag.
   let entityId = getEntityId(entity)
   let tagId = world.getTagID(tagType)
   if entityId >= world.entities.len.uint32:
@@ -440,8 +470,12 @@ proc hasTag*(world: var World, entity: uint64, tagType: typedesc): bool =
   let tagMask = 1'u64 shl tagId
   return (world.entities[entityId].tagBitmask and tagMask) != 0
 
-# Iterators
+#------------------------------------------------------------------------------
+# Iterators for Queries
+#------------------------------------------------------------------------------
+
 iterator withComponent*(world: var World, componentType: typedesc): uint64 =
+  ## Iterates over all entities that have the specified component
   let componentMask = 1'u64 shl world.getComponentID(componentType)
 
   for archetype in world.archetypes:
@@ -451,6 +485,7 @@ iterator withComponent*(world: var World, componentType: typedesc): uint64 =
           yield entityId.uint64 shl 32 + world.entities[entityId].version.uint64
 
 iterator withTag*(world: var World, tagType: typedesc): uint64 =
+  ## Iterates over all entities that have the specified tag.
   let tagMask = 1'u64 shl world.getTagID(tagType)
 
   for i in 0..world.currentEntityId:
@@ -458,6 +493,7 @@ iterator withTag*(world: var World, tagType: typedesc): uint64 =
       yield i.uint64 shl 32 + world.entities[i].version.uint64
 
 iterator withComponents*(world: var World, T1: typedesc, T2: typedesc): uint64 =
+  ## Iterates over all entities that have both of the specified components.
   let mask1 = 1'u64 shl world.getComponentID(T1)
   let mask2 = 1'u64 shl world.getComponentID(T2)
   let combinedMask = mask1 or mask2
@@ -469,6 +505,7 @@ iterator withComponents*(world: var World, T1: typedesc, T2: typedesc): uint64 =
           yield entityId.uint64 shl 32 + world.entities[entityId].version.uint64
 
 iterator withComponentTag*(world: var World, Comp: typedesc, Tag: typedesc): uint64 =
+  ## Iterates over all entities that have the specified component AND tag.
   let compMask = 1'u64 shl world.getComponentID(Comp)
   let tagMask = 1'u64 shl world.getTagID(Tag)
 
@@ -497,7 +534,7 @@ proc withTagSeq*(entities: seq[uint64], world: var World, tagType: typedesc): se
     if world.hasTag(entity, tagType):
       result.add entity
 
-# Дополнительные итераторы для макроса
+# (Internal) Helper iterators for the `system` macro.
 iterator withComponents3*(world: var World, T1: typedesc, T2: typedesc, T3: typedesc): uint64 =
   let mask1 = 1'u64 shl world.getComponentID(T1)
   let mask2 = 1'u64 shl world.getComponentID(T2)
@@ -523,33 +560,33 @@ iterator withComponents4*(world: var World, T1: typedesc, T2: typedesc, T3: type
         if world.entities[entityId].version > 0:
           yield entityId.uint64 shl 32 + world.entities[entityId].version.uint64
 
-import macros
+#------------------------------------------------------------------------------
+# Macros for High-Level API
+#------------------------------------------------------------------------------
 
 macro system*(world: untyped, name: untyped, args: varargs[untyped]): untyped =
-  ## Макрос для создания системы.
-  ## Автоматически генерирует цикл по сущностям и получение компонентов.
+  ## Creates a system that iterates over entities with a specific set of components.
+  ## The macro automatically generates the query loop and provides convenient
+  ## variables for each component.
   ##
-  ## Пример использования:
-  ## system world, updatePositions:
+  ## Usage:
+  ## ```nim
+  ## system world, mySystem:
   ##   pos: Position:
-  ##     pos.x += 1
-  ##   vel: Velocity:
-  ##     vel.y += 1
+  ##     vel: Velocity:
+  ##       pos.x += vel.dx
+  ## ```
 
-  # Последний аргумент - это тело системы
   let body = args[^1]
 
-  # Все остальные аргументы - это компоненты
   var componentDefs: seq[(NimNode, NimNode)] = @[]
   for i in 0..<args.len-1:
     let arg = args[i]
     if arg.kind == nnkCall and arg.len == 2:
-      # Формат: componentName: ComponentType
       let compName = arg[0]
-      let compType = arg[1][0] # Берем первый stmt из StmtList
+      let compType = arg[1][0]
       componentDefs.add((compName, compType))
 
-  # Определяем, какой итератор использовать
   var iteratorCall: NimNode
   case componentDefs.len
   of 0:
@@ -585,10 +622,8 @@ macro system*(world: untyped, name: untyped, args: varargs[untyped]): untyped =
     error("System supports maximum 4 components", name)
     return
 
-  # Создаем тело цикла
   var loopBody = newStmtList()
 
-  # Добавляем получение компонентов
   for (compName, compType) in componentDefs:
     let getCompCall = newCall(
       newDotExpr(world, ident"getComponent"),
@@ -597,17 +632,14 @@ macro system*(world: untyped, name: untyped, args: varargs[untyped]): untyped =
     )
     loopBody.add(newVarStmt(compName, getCompCall))
 
-  # Добавляем пользовательское тело
   loopBody.add(body)
 
-  # Создаем цикл for
   let forLoop = nnkForStmt.newTree(
     ident"entity",
     iteratorCall,
     loopBody
   )
 
-  # Создаем процедуру
   result = newProc(
     name,
     [newEmptyNode(), newIdentDefs(world, nnkVarTy.newTree(ident"World"))],
@@ -615,35 +647,37 @@ macro system*(world: untyped, name: untyped, args: varargs[untyped]): untyped =
   )
 
 macro prefab*(name: string, body: untyped): untyped =
-  ## Макрос для определения префаба (шаблона) сущности.
+  ## Defines a prefab (entity template) with a set of default components.
+  ## This macro generates a `register_prefab_...` procedure that must be called
+  ## to make the prefab available to the world.
   ##
-  ## Пример:
+  ## Usage:
+  ## ```nim
   ## prefab "player":
-  ##   PositionComponent(x: 100, y: 100)
-  ##   VelocityComponent(dx: 0, dy: 0)
+  ##   Position(x: 100, y: 100)
+  ##   Velocity(dx: 0, dy: 0)
+  ##
+  ## register_prefab_player(world)
+  ## ```
 
   var initializers = newNimNode(nnkStmtList)
   var registerCalls = newNimNode(nnkStmtList)
 
-  # Проходим по телу макроса (по каждой строке типа `PositionComponent(...)`)
   for node in body:
     if node.kind != nnkCall:
       error("Prefab body must contain component initializers", node)
     let compType = node[0]
     let compValue = node
 
-    # Генерируем proc-инициализатор для каждого компонента
     let initializerProc = genSym(nskProc, "initializer")
     let procDef = quote do:
       let `initializerProc` = proc(world: var World, entity: uint64, overridesPtr: pointer) =
         let overrides = cast[ptr Table[string, pointer]](overridesPtr)[]
         let typeName = $`compType`
         if typeName in overrides:
-          # Если есть переопределение, используем его
           let overrideValue = cast[ptr `compType`](overrides[typeName])[]
           discard world.addComponent(entity, overrideValue)
         else:
-          # Иначе используем значение по умолчанию
           discard world.addComponent(entity, `compValue`)
 
     initializers.add(procDef)
@@ -651,7 +685,6 @@ macro prefab*(name: string, body: untyped): untyped =
       prefab.initializers.add(`initializerProc`)
     )
 
-  # Генерируем функцию, которая зарегистрирует этот префаб
   let registerProcName = newIdentNode("register_prefab_" & name.strVal.replace('-', '_'))
   result = quote do:
     proc `registerProcName`*(world: var World) =
@@ -662,21 +695,22 @@ macro prefab*(name: string, body: untyped): untyped =
 
 
 macro spawn*(world: untyped, name: string, overrides: varargs[untyped]): untyped =
-  ## Создает сущность по префабу, позволяя переопределить компоненты.
+  ## Spawns an entity from a registered prefab, with optional component overrides.
+  ##
+  ## Usage:
+  ## ```nim
+  ## let player = world.spawn("player")
+  ## let enemy = world.spawn("enemy", Position(x: 500, y: 200))
+  ## ```
   var initBlock = newStmtList()
   let tableVar = genSym(nskVar, "overrideTable")
 
-  # 1. Создаем таблицу для переопределений
   initBlock.add(quote do:
     var `tableVar` = initTable[string, pointer]()
   )
 
-  # 2. Заполняем таблицу из аргументов макроса
   for item in overrides:
-    # Мы ожидаем выражения вида: `PositionComponent(x: 10, y: 20)`
-    # Чтобы получить его тип, мы можем использовать typeof, но лучше
-    # просто взять имя типа из вызова конструктора.
-    let typeNameStr = $item[0] # item[0] - это имя типа (например, `PositionComponent`)
+    let typeNameStr = $item[0]
     let tempVar = genSym(nskLet, "overrideValue")
 
     initBlock.add(quote do:
@@ -684,13 +718,13 @@ macro spawn*(world: untyped, name: string, overrides: varargs[untyped]): untyped
       `tableVar`[`typeNameStr`] = `tempVar`.addr
     )
 
-  # 3. Вызываем нашу внутреннюю процедуру
   result = quote do:
     block:
       `initBlock`
       spawnFromPrefab(`world`, `name`, `tableVar`)
 
 proc spawnFromPrefab(world: var World, name: string, overrides: Table[string, pointer]): uint64 =
+  # (Internal) The core implementation logic for the `spawn` macro.
   if name notin world.prefabs:
     raise newException(ValueError, "Prefab not found: " & name)
 
@@ -703,42 +737,39 @@ proc spawnFromPrefab(world: var World, name: string, overrides: Table[string, po
 
   return entity
 
-# --- Вставьте эти процедуры в файл tecs.nim ---
+#------------------------------------------------------------------------------
+# Event System
+#------------------------------------------------------------------------------
 
 proc registerListener*[T](world: var World, listener: proc(w: var World, e: ptr T) {.closure.}) =
-  ## Регистрирует процедуру-обработчик, безопасно стирая тип с помощью замыкания-обертки.
+  ## Registers an event listener for a specific event type `T`.
+  ## The listener procedure will be called when the event queue is dispatched.
+  ## Handles closures safely.
   let typeName = $T
   if not world.eventListeners.hasKey(typeName):
     world.eventListeners[typeName] = @[]
 
-  # Создаем замыкание-обертку. Эта анонимная процедура имеет "правильную"
-  # сигнатуру (с `pointer`) и захватывает оригинальный `listener` в свое окружение.
   let wrapper = proc(w: var World, data: pointer) {.closure.} =
-    # Внутри обертки мы безопасно приводим `pointer` обратно к конкретному типу `ptr T`,
-    # потому что мы *знаем*, что для этого типа события это преобразование всегда будет верным.
     let specificEvent = cast[ptr T](data)
 
-    # Вызываем оригинальный, типизированный обработчик.
     listener(w, specificEvent)
 
-  # Добавляем в таблицу `wrapper`. Его тип полностью совпадает с EventListener,
-  # поэтому никакой небезопасный `cast` больше не нужен.
   world.eventListeners[typeName].add(wrapper)
 
 proc sendEvent*[T](world: var World, event: T) =
-  ## Ставит событие в очередь на обработку в конце кадра.
+  ## Queues an event to be processed at the end of the current frame.
+  ## This is a fast operation that copies the event data into a queue.
   let typeName = $T
   if typeName notin world.eventQueues:
     world.eventQueues[typeName] = @[]
 
-  # Выделяем память для копии события, чтобы оно "жило" до конца кадра
   let dataPtr = cast[ptr T](allocShared(sizeof(T)))
   dataPtr[] = event # Копируем данные события
   world.eventQueues[typeName].add(dataPtr)
 
 proc dispatchEventQueue*(world: var World) =
-  ## Обрабатывает все события в очереди, вызывая подписчиков.
-  ## Эту функцию нужно вызывать один раз в конце каждого кадра.
+  ## Processes all queued events, calling their registered listeners.
+  ## This should be called once per frame, typically after all systems have run.
   for typeName, queue in world.eventQueues.mpairs:
     if queue.len == 0: continue
 
@@ -749,11 +780,8 @@ proc dispatchEventQueue*(world: var World) =
           for listener in listeners:
             listener(world, eventPtr)
 
-    # После обработки всех событий этого типа, освобождаем память
     for eventPtr in queue:
       deallocShared(eventPtr)
-
-    # Очищаем очередь для следующего кадра
     queue.setLen(0)
 
 when isMainModule:
@@ -767,7 +795,7 @@ when isMainModule:
       color: int
     HealthComponent = object
       current, max: int
-    HomingMissileTag = object # Теги тоже можно добавлять в префабы!
+    HomingMissileTag = object
 
   # --- 1. Определяем префабы ---
   prefab "player":

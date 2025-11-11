@@ -1,37 +1,37 @@
 nimTitle	world	naecs/world.html	module src/naecs/world		0
-nim	Entity	naecs/world.html#Entity	object Entity		13
-nim	World	naecs/world.html#World	object World		35
-nim	initWorld	naecs/world.html#initWorld,uint32,uint32	proc initWorld(initAlloc: uint32 = 1000; allocSize: uint32 = 1000): World		75
-nim	getEntityId	naecs/world.html#getEntityId,uint64	proc getEntityId(entity: uint64): uint32		104
-nim	getEntityVersion	naecs/world.html#getEntityVersion,uint64	proc getEntityVersion(entity: uint64): uint32		108
-nim	getComponentID	naecs/world.html#getComponentID,World,typedesc	proc getComponentID(world: var World; componentType: typedesc): uint32		123
-nim	getTagID	naecs/world.html#getTagID,World,typedesc	proc getTagID(world: var World; tagType: typedesc): uint32		136
-nim	addEntity	naecs/world.html#addEntity,World	proc addEntity(world: var World): uint64		266
-nim	addComponent	naecs/world.html#addComponent,World,uint64,T	proc addComponent[T](world: var World; entity: uint64; component: T): ptr T		285
-nim	addComponent	naecs/world.html#addComponent,World,uint64,typedesc[T]	proc addComponent[T](world: var World; entity: uint64; componentType: typedesc[T]): ptr T		341
-nim	getComponent	naecs/world.html#getComponent,World,uint64,typedesc[T]	proc getComponent[T](world: var World; entity: uint64; componentType: typedesc[T]): ptr T		345
-nim	removeComponent	naecs/world.html#removeComponent,World,uint64,typedesc	proc removeComponent(world: var World; entity: uint64; componentType: typedesc)		362
-nim	addTag	naecs/world.html#addTag,World,uint64,typedesc	proc addTag(world: var World; entity: uint64; tagType: typedesc)		401
-nim	removeTag	naecs/world.html#removeTag,World,uint64,typedesc	proc removeTag(world: var World; entity: uint64; tagType: typedesc)		407
-nim	freeEntity	naecs/world.html#freeEntity,World,uint64	proc freeEntity(world: var World; entity: uint64)		417
-nim	hasComponent	naecs/world.html#hasComponent,World,uint64,typedesc	proc hasComponent(world: var World; entity: uint64; componentType: typedesc): bool		426
-nim	hasTag	naecs/world.html#hasTag,World,uint64,typedesc	proc hasTag(world: var World; entity: uint64; tagType: typedesc): bool		435
-nim	withComponent	naecs/world.html#withComponent.i,World,typedesc	iterator withComponent(world: var World; componentType: typedesc): uint64		444
-nim	withTag	naecs/world.html#withTag.i,World,typedesc	iterator withTag(world: var World; tagType: typedesc): uint64		453
-nim	withComponents	naecs/world.html#withComponents.i,World,typedesc,typedesc	iterator withComponents(world: var World; T1: typedesc; T2: typedesc): uint64		460
-nim	withComponentTag	naecs/world.html#withComponentTag.i,World,typedesc,typedesc	iterator withComponentTag(world: var World; Comp: typedesc; Tag: typedesc): uint64		471
-nim	withComponentSeq	naecs/world.html#withComponentSeq,World,typedesc	proc withComponentSeq(world: var World; componentType: typedesc): seq[uint64]		482
-nim	withComponentSeq	naecs/world.html#withComponentSeq,seq[uint64],World,typedesc	proc withComponentSeq(entities: seq[uint64]; world: var World;\n                 componentType: typedesc): seq[uint64]		486
-nim	withTagSeq	naecs/world.html#withTagSeq,World,typedesc	proc withTagSeq(world: var World; tagType: typedesc): seq[uint64]		491
-nim	withTagSeq	naecs/world.html#withTagSeq,seq[uint64],World,typedesc	proc withTagSeq(entities: seq[uint64]; world: var World; tagType: typedesc): seq[\n    uint64]		495
-nim	withComponents3	naecs/world.html#withComponents3.i,World,typedesc,typedesc,typedesc	iterator withComponents3(world: var World; T1: typedesc; T2: typedesc; T3: typedesc): uint64		501
-nim	withComponents4	naecs/world.html#withComponents4.i,World,typedesc,typedesc,typedesc,typedesc	iterator withComponents4(world: var World; T1: typedesc; T2: typedesc; T3: typedesc;\n                T4: typedesc): uint64		513
-nim	system	naecs/world.html#system.m,untyped,untyped,varargs[untyped]	macro system(world: untyped; name: untyped; args: varargs[untyped]): untyped		528
-nim	prefab	naecs/world.html#prefab.m,string,untyped	macro prefab(name: string; body: untyped): untyped		617
-nim	spawn	naecs/world.html#spawn.m,untyped,string,varargs[untyped]	macro spawn(world: untyped; name: string; overrides: varargs[untyped]): untyped		664
-nim	registerListener	naecs/world.html#registerListener,World,proc(World,ptr.T)	proc registerListener[T](world: var World;\n                    listener: proc (w: var World; e: ptr T) {.closure.})		708
-nim	sendEvent	naecs/world.html#sendEvent,World,T	proc sendEvent[T](world: var World; event: T)		728
-nim	dispatchEventQueue	naecs/world.html#dispatchEventQueue,World	proc dispatchEventQueue(world: var World)		739
-nimgrp	withcomponentseq	naecs/world.html#withComponentSeq-procs-all	proc		482
-nimgrp	addcomponent	naecs/world.html#addComponent-procs-all	proc		285
-nimgrp	withtagseq	naecs/world.html#withTagSeq-procs-all	proc		491
+nim	Entity	naecs/world.html#Entity	object Entity		19
+nim	World	naecs/world.html#World	object World		41
+nim	initWorld	naecs/world.html#initWorld,uint32,uint32	proc initWorld(initAlloc: uint32 = 1000; allocSize: uint32 = 1000): World		87
+nim	getEntityId	naecs/world.html#getEntityId,uint64	proc getEntityId(entity: uint64): uint32		119
+nim	getEntityVersion	naecs/world.html#getEntityVersion,uint64	proc getEntityVersion(entity: uint64): uint32		123
+nim	getComponentID	naecs/world.html#getComponentID,World,typedesc	proc getComponentID(world: var World; componentType: typedesc): uint32		140
+nim	getTagID	naecs/world.html#getTagID,World,typedesc	proc getTagID(world: var World; tagType: typedesc): uint32		155
+nim	addEntity	naecs/world.html#addEntity,World	proc addEntity(world: var World): uint64		291
+nim	addComponent	naecs/world.html#addComponent,World,uint64,T	proc addComponent[T](world: var World; entity: uint64; component: T): ptr T		311
+nim	addComponent	naecs/world.html#addComponent,World,uint64,typedesc[T]	proc addComponent[T](world: var World; entity: uint64; componentType: typedesc[T]): ptr T		368
+nim	getComponent	naecs/world.html#getComponent,World,uint64,typedesc[T]	proc getComponent[T](world: var World; entity: uint64; componentType: typedesc[T]): ptr T		372
+nim	removeComponent	naecs/world.html#removeComponent,World,uint64,typedesc	proc removeComponent(world: var World; entity: uint64; componentType: typedesc)		390
+nim	addTag	naecs/world.html#addTag,World,uint64,typedesc	proc addTag(world: var World; entity: uint64; tagType: typedesc)		427
+nim	removeTag	naecs/world.html#removeTag,World,uint64,typedesc	proc removeTag(world: var World; entity: uint64; tagType: typedesc)		433
+nim	freeEntity	naecs/world.html#freeEntity,World,uint64	proc freeEntity(world: var World; entity: uint64)		444
+nim	hasComponent	naecs/world.html#hasComponent,World,uint64,typedesc	proc hasComponent(world: var World; entity: uint64; componentType: typedesc): bool		454
+nim	hasTag	naecs/world.html#hasTag,World,uint64,typedesc	proc hasTag(world: var World; entity: uint64; tagType: typedesc): bool		464
+nim	withComponent	naecs/world.html#withComponent.i,World,typedesc	iterator withComponent(world: var World; componentType: typedesc): uint64		477
+nim	withTag	naecs/world.html#withTag.i,World,typedesc	iterator withTag(world: var World; tagType: typedesc): uint64		487
+nim	withComponents	naecs/world.html#withComponents.i,World,typedesc,typedesc	iterator withComponents(world: var World; T1: typedesc; T2: typedesc): uint64		495
+nim	withComponentTag	naecs/world.html#withComponentTag.i,World,typedesc,typedesc	iterator withComponentTag(world: var World; Comp: typedesc; Tag: typedesc): uint64		507
+nim	withComponentSeq	naecs/world.html#withComponentSeq,World,typedesc	proc withComponentSeq(world: var World; componentType: typedesc): seq[uint64]		519
+nim	withComponentSeq	naecs/world.html#withComponentSeq,seq[uint64],World,typedesc	proc withComponentSeq(entities: seq[uint64]; world: var World;\n                 componentType: typedesc): seq[uint64]		523
+nim	withTagSeq	naecs/world.html#withTagSeq,World,typedesc	proc withTagSeq(world: var World; tagType: typedesc): seq[uint64]		528
+nim	withTagSeq	naecs/world.html#withTagSeq,seq[uint64],World,typedesc	proc withTagSeq(entities: seq[uint64]; world: var World; tagType: typedesc): seq[\n    uint64]		532
+nim	withComponents3	naecs/world.html#withComponents3.i,World,typedesc,typedesc,typedesc	iterator withComponents3(world: var World; T1: typedesc; T2: typedesc; T3: typedesc): uint64		538
+nim	withComponents4	naecs/world.html#withComponents4.i,World,typedesc,typedesc,typedesc,typedesc	iterator withComponents4(world: var World; T1: typedesc; T2: typedesc; T3: typedesc;\n                T4: typedesc): uint64		550
+nim	system	naecs/world.html#system.m,untyped,untyped,varargs[untyped]	macro system(world: untyped; name: untyped; args: varargs[untyped]): untyped		567
+nim	prefab	naecs/world.html#prefab.m,string,untyped	macro prefab(name: string; body: untyped): untyped		649
+nim	spawn	naecs/world.html#spawn.m,untyped,string,varargs[untyped]	macro spawn(world: untyped; name: string; overrides: varargs[untyped]): untyped		697
+nim	registerListener	naecs/world.html#registerListener,World,proc(World,ptr.T)	proc registerListener[T](world: var World;\n                    listener: proc (w: var World; e: ptr T) {.closure.})		744
+nim	sendEvent	naecs/world.html#sendEvent,World,T	proc sendEvent[T](world: var World; event: T)		759
+nim	dispatchEventQueue	naecs/world.html#dispatchEventQueue,World	proc dispatchEventQueue(world: var World)		770
+nimgrp	withcomponentseq	naecs/world.html#withComponentSeq-procs-all	proc		519
+nimgrp	addcomponent	naecs/world.html#addComponent-procs-all	proc		311
+nimgrp	withtagseq	naecs/world.html#withTagSeq-procs-all	proc		528
