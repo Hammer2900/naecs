@@ -1,0 +1,68 @@
+# ===================================================================
+# Standard .gitignore for Nim Projects
+# ===================================================================
+
+# 1. Nim & Nimble Compilation Artifacts
+# -------------------------------------------------------------------
+# Nim's cache directory
+nimcache/
+
+# Generated C/C++ source files
+*.c
+*.h
+*.cpp
+*.obj
+
+# Compiled object files and libraries
+*.o
+*.a
+*.so
+*.dll
+
+# Nimble build output directory
+bin/
+
+# Nimble package directory (in case of local install)
+nimble_packages/
+
+
+# 2. Test & Benchmark Executables
+# -------------------------------------------------------------------
+# These are generated when running `nimble test` or `nim c -r tests/...`
+# Add any other test executable names here if you create more.
+test1
+bench
+
+
+# 3. Common IDE / Editor Files
+# -------------------------------------------------------------------
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*~
+
+
+# 4. OS-specific Files
+# -------------------------------------------------------------------
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+ehthumbs_vista.db
+*.[lL][iI][kK]
+
+
+# 5. Other
+# -------------------------------------------------------------------
+# Log files
+*.log
+
+# Environment variables file (if you use one)
+.env
+local.env

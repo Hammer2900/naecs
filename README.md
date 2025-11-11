@@ -2,6 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Nim Version](https://img.shields.io/badge/nim-2.0%2B-orange.svg)](https://nim-lang.org/)
+[![Documentation](https://img.shields.io/badge/docs-gh--pages-blue)](https://hammer2900.github.io/naecs/)
 
 **NAECS** (Not Another ECS) is yet another Entity Component System implementation in Nim. Yes, we know, there are many. But this one was built from the ground up for one purpose: to fuse the raw power of a modern **archetype architecture** with an API so clean you'll forget you're not just writing game logic.
 
