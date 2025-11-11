@@ -63,14 +63,12 @@ world.addComponent(player, Position(x: 10, y: 20))
 world.addComponent(player, Velocity(dx: 1, dy: 0))
 world.addTag(player, PlayerTag)
 
-# 4. Write a system using the convenient macro
-system world, movementSystem:
-  pos: Position:
-    vel: Velocity:
-      # The macro automatically provides `pos` and `vel` variables
-      # for every entity that has both components.
-      pos.x += vel.dx
-      pos.y += vel.dy
+system movementSystem(world: var World, pos: Position, vel: Velocity):
+  pos.x += vel.dx
+
+proc movementSystem(world: var World, pos: Position, vel: Velocity) {.system.} =
+  pos.x += vel.dx
+  pos.y += vel.dy
 
 # 5. Run the system in your game loop
 proc gameLoop() =
@@ -155,11 +153,14 @@ This system dramatically speeds up development and keeps your entity creation lo
 The cleanest and simplest way to write systems.
 
 ```nim
-system world, renderSystem:
-  pos: Position:
-    sprite: Renderable:
-      # Your logic here
-      drawSprite(sprite.id, pos.x, pos.y)
+system movementSystem(world: var World, pos: Position, vel: Velocity):
+  pos.x += vel.dx
+```
+or
+```nim
+proc movementSystem(world: var World, pos: Position, vel: Velocity) {.system.} =
+  pos.x += vel.dx
+  pos.y += vel.dy
 ```
 
 <hr>

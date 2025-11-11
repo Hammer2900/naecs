@@ -564,85 +564,87 @@ iterator withComponents4*(world: var World, T1: typedesc, T2: typedesc, T3: type
 # Macros for High-Level API
 #------------------------------------------------------------------------------
 
-macro system*(world: untyped, name: untyped, args: varargs[untyped]): untyped =
-  ## Creates a system that iterates over entities with a specific set of components.
-  ## The macro automatically generates the query loop and provides convenient
-  ## variables for each component.
+macro system*(procDef: untyped): untyped =
+  ## Макрос для создания системы с чистым синтаксисом.
   ##
-  ## Usage:
-  ## ```nim
-  ## system world, mySystem:
-  ##   pos: Position:
-  ##     vel: Velocity:
-  ##       pos.x += vel.dx
-  ## ```
+  ## Пример использования:
+  ## proc movementSystem(world: var World, pos: Position, vel: Velocity) {.system.} =
+  ##   pos.x += vel.dx
+  ##   pos.y += vel.dy
 
-  let body = args[^1]
+  expectKind(procDef, nnkProcDef)
 
-  var componentDefs: seq[(NimNode, NimNode)] = @[]
-  for i in 0..<args.len-1:
-    let arg = args[i]
-    if arg.kind == nnkCall and arg.len == 2:
-      let compName = arg[0]
-      let compType = arg[1][0]
-      componentDefs.add((compName, compType))
+  let procName = procDef[0]
+  let params = procDef[3]  # FormalParams
+  let body = procDef[6]    # Body
 
+  # Извлекаем параметры
+  var worldName: NimNode
+  var componentNames: seq[NimNode] = @[]
+  var componentTypes: seq[NimNode] = @[]
+
+  # Пропускаем первый элемент (возвращаемый тип)
+  for i in 1..<params.len:
+    let param = params[i]
+    expectKind(param, nnkIdentDefs)
+
+    let paramName = param[0]
+    let paramType = param[1]
+
+    if i == 1:
+      # Первый параметр - world
+      if paramType.kind == nnkVarTy and paramType[0].repr == "World":
+        worldName = paramName
+      else:
+        error("First parameter must be 'world: var World'", param)
+    else:
+      # Остальные - компоненты
+      componentNames.add(paramName)
+      componentTypes.add(paramType)
+
+  if componentTypes.len == 0:
+    error("System must query at least one component", procDef)
+
+  # Определяем, какой итератор использовать
   var iteratorCall: NimNode
-  case componentDefs.len
-  of 0:
-    error("System must have at least one component", name)
-    return
+  case componentTypes.len
   of 1:
-    iteratorCall = newCall(
-      newDotExpr(world, ident"withComponent"),
-      componentDefs[0][1]
-    )
+    iteratorCall = newCall(newDotExpr(worldName, ident"withComponent"), componentTypes[0])
   of 2:
-    iteratorCall = newCall(
-      newDotExpr(world, ident"withComponents"),
-      componentDefs[0][1],
-      componentDefs[1][1]
-    )
+    iteratorCall = newCall(newDotExpr(worldName, ident"withComponents"), componentTypes[0], componentTypes[1])
   of 3:
-    iteratorCall = newCall(
-      newDotExpr(world, ident"withComponents3"),
-      componentDefs[0][1],
-      componentDefs[1][1],
-      componentDefs[2][1]
-    )
+    iteratorCall = newCall(newDotExpr(worldName, ident"withComponents3"), componentTypes[0], componentTypes[1], componentTypes[2])
   of 4:
-    iteratorCall = newCall(
-      newDotExpr(world, ident"withComponents4"),
-      componentDefs[0][1],
-      componentDefs[1][1],
-      componentDefs[2][1],
-      componentDefs[3][1]
-    )
+    iteratorCall = newCall(newDotExpr(worldName, ident"withComponents4"), componentTypes[0], componentTypes[1], componentTypes[2], componentTypes[3])
   else:
-    error("System supports maximum 4 components", name)
-    return
+    error("System supports maximum 4 components", procDef)
 
+  # Создаем тело цикла
   var loopBody = newStmtList()
 
-  for (compName, compType) in componentDefs:
+  # Добавляем получение компонентов
+  for i, compName in componentNames:
     let getCompCall = newCall(
-      newDotExpr(world, ident"getComponent"),
+      newDotExpr(worldName, ident"getComponent"),
       ident"entity",
-      compType
+      componentTypes[i]
     )
     loopBody.add(newVarStmt(compName, getCompCall))
 
+  # Добавляем пользовательское тело
   loopBody.add(body)
 
+  # Создаем цикл for
   let forLoop = nnkForStmt.newTree(
     ident"entity",
     iteratorCall,
     loopBody
   )
 
+  # Создаем процедуру
   result = newProc(
-    name,
-    [newEmptyNode(), newIdentDefs(world, nnkVarTy.newTree(ident"World"))],
+    procName,
+    [newEmptyNode(), newIdentDefs(worldName, nnkVarTy.newTree(ident"World"))],
     forLoop
   )
 
@@ -692,7 +694,6 @@ macro prefab*(name: string, body: untyped): untyped =
       `initializers`
       `registerCalls`
       world.prefabs[`name`] = prefab
-
 
 macro spawn*(world: untyped, name: string, overrides: varargs[untyped]): untyped =
   ## Spawns an entity from a registered prefab, with optional component overrides.
